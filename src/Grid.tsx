@@ -69,8 +69,17 @@ class Grid {
     const end = hexFactory(start.x + offsetX, start.y + offsetY).nudge();
 
     const distance = start.distance(end);
-    const step = Math.min(distance, maxDistance) / Math.max(distance, 1);
-    return this.getAtHex(start.lerp(end, step).round());
+    const numSteps = Math.min(distance, maxDistance);
+    console.log(numSteps);
+    const step = 1.0 / Math.max(distance, 1);
+
+    for (let i = 1; i < numSteps; i++) {
+      const res = this.getAtHex(start.lerp(end, step * i).round());
+      if (res.type === CELL_WALL) {
+        return res;
+      }
+    }
+    return this.getAtHex(start.lerp(end, step * numSteps).round());
   }
 }
 

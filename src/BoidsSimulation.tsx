@@ -1,7 +1,7 @@
 import { MAX_LOOK_DISTANCE } from './config';
 
 import Context from './Context';
-import Grid from './Grid';
+import Grid, { CELL_EMPTY } from './Grid';
 import Boid from './Boid';
 
 const shuffleInPlace = <T,>(array: T[]) => {
@@ -30,7 +30,11 @@ class BoidsSimulation {
               'if',
               'SAW_BOID',
               ['sub', ['add', 'LOOK_AT', 'SAW_MOVEMENT'], 'MOVED_MOVED'],
-              ['add', 'LOOK_AT', ['random_vec2', 0, 2]],
+              [
+                'add',
+                ['mul', 'LOOK_AT', ['vec2', 0.9, 0.9]],
+                ['random_vec2', 0, 2],
+              ],
             ],
           ],
           MOVE_TOWARDS: 'LOOK_AT',
@@ -63,14 +67,15 @@ class BoidsSimulation {
       );
 
       b.prevHex = grid.getAtIndex(b.gridIndex);
-      b.gridIndex = grid.getHexIndex(
-        grid.getTowards(
-          b.gridIndex,
-          b.brain.io.MOVE_TOWARDS[0],
-          b.brain.io.MOVE_TOWARDS[1],
-          1,
-        ),
+      const candidateMove = grid.getTowards(
+        b.gridIndex,
+        b.brain.io.MOVE_TOWARDS[0],
+        b.brain.io.MOVE_TOWARDS[1],
+        1,
       );
+      if (candidateMove.type === CELL_EMPTY) {
+        b.gridIndex = grid.getHexIndex(candidateMove);
+      }
 
       // SAW_EMPTY: 0,
       // SAW_OBSCURED: 0,
