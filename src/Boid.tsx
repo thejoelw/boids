@@ -4,14 +4,14 @@ import BoidBrain, { BoidDefnNode } from './BoidBrain';
 class Boid {
   public brain: BoidBrain;
 
-  public gridIndex: number;
-
-  public prevHex: Hex | undefined;
+  public prevHex: Hex;
+  public hex: Hex;
   public lookedAt: Hex | undefined;
 
-  constructor(defn: BoidDefnNode, gridIndex: number) {
+  constructor(defn: BoidDefnNode, hex: Hex) {
     this.brain = new BoidBrain(defn);
-    this.gridIndex = gridIndex;
+    this.prevHex = hex;
+    this.hex = hex;
   }
 
   getColor() {

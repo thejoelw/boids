@@ -72,19 +72,16 @@ class BoidsRenderer {
     gfx.lineStyle(0.1, 0x222222, 1);
 
     boids.forEach((b) => {
-      const hex = grid.getAtIndex(b.gridIndex);
       const color = b.getColor();
-      this.drawHex(gfx, hex, color, 1);
+      this.drawHex(gfx, b.hex, color, 1);
 
-      if (b.prevHex) {
-        const start = b.prevHex.toPoint().add(hex.center());
-        const end = b.prevHex
-          .add({ x: b.brain.io.LOOK_AT[0], y: b.brain.io.LOOK_AT[1] })
-          .toPoint()
-          .add(b.prevHex.center());
-        gfx.moveTo(start.x, start.y);
-        gfx.lineTo(end.x, end.y);
-      }
+      const start = b.hex.toPoint().add(b.hex.center());
+      const end = b.hex
+        .add({ x: b.brain.io.LOOK_AT[0], y: b.brain.io.LOOK_AT[1] })
+        .toPoint()
+        .add(b.hex.center());
+      gfx.moveTo(start.x, start.y);
+      gfx.lineTo(end.x, end.y);
 
       if (b.lookedAt) {
         this.drawHex(gfx, b.lookedAt, color, 0.2);

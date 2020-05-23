@@ -21,20 +21,6 @@ const parseCoordString = (str: string) => {
 };
 */
 
-const warrior = {
-  COLOR: ['vec3', 1, 0, 0],
-  LOOK_AT: [
-    'clamp_to_cell',
-    [
-      'if',
-      'SAW_BOID',
-      ['sub', ['add', 'LOOK_AT', 'SAW_MOVEMENT'], 'MOVED_MOVED'],
-      ['random_vec2', 0, 10],
-    ],
-  ],
-  MOVE_TOWARDS: 'LOOK_AT',
-};
-
 /*
 Border walls
 Simplex walls
@@ -58,6 +44,18 @@ const funcs = {
   vec4: (x: number, y: number, z: number, w: number) => [x, y, z, w],
   clamp_to_cell: (v2: [number, number]) => v2,
   if: (cond: boolean, ifTrue: any, ifFalse: any) => (cond ? ifTrue : ifFalse),
+  switch: (key: string, map: Record<string, any>) =>
+    map.hasOwnProperty(key) ? map[key] : map.default,
+  eq: (a: any, b: any) => {
+    if (Array.isArray(a)) {
+      if (!Array.isArray(b) || a.length !== b.length) {
+        throw new Error(`Cannot eq vectors ${a} and ${b}`);
+      }
+      return a.every((_, i) => a[i] === b[i]);
+    } else {
+      return a === b;
+    }
+  },
   add: (a: any, b: any) => {
     if (Array.isArray(a)) {
       if (!Array.isArray(b) || a.length !== b.length) {
@@ -94,6 +92,8 @@ const funcs = {
   ],
 };
 
+const constants = {};
+
 export type BoidDefnMap = { [key: string]: BoidDefnNode };
 export type BoidDefnArray = BoidDefnNode[];
 export type BoidDefnNode = BoidDefnMap | BoidDefnArray | string | number;
@@ -107,22 +107,18 @@ class BoidBrain {
 
     this.io = {
       ...funcs,
+      ...constants,
 
       // Input
-      SAW_EMPTY: 0,
-      SAW_OBSCURED: 0,
-      SAW_FOOD: 0,
-      SAW_WALL: 0,
-      SAW_BOID: 0,
-      SAW_LOCATION: [0, 0],
+      SAW_ITEM: 'ITEM_EMPTY',
+      SAW_LIMITED: false,
+      SAW_OBSCURED: false,
+      SAW_OFFSET: [0, 0],
       SAW_MOVEMENT: [0, 0],
       SAW_COLOR: [0, 0, 0],
-      FELT_EMPTY: 0,
-      FELT_FOOD: 0,
-      FELT_WALL: 0,
-      FELT_BOID: 0,
+      FELT_ITEM: 'ITEM_EMPTY',
       FELT_MOVEMENT: [0, 0],
-      MOVED_MOVED: [0, 0],
+      MOVED_MOVEMENT: [0, 0],
       MOVED_BLOCKED: 0,
 
       // Output

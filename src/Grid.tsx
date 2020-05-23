@@ -1,16 +1,24 @@
 import * as Honeycomb from 'honeycomb-grid';
 
-import { GRID_RADIUS, GRID_PADDING } from './config';
+import { GRID_RADIUS } from './config';
 
 import Context from './Context';
+import Boid from './Boid';
 
 export const CELL_WALL = 1;
 export const CELL_EMPTY = 2;
+
+export const HIT_TARGET = 0;
+export const HIT_WALL = 1;
+export const HIT_LIMIT = 2;
 
 export type Hex = Honeycomb.Hex<{
   type: typeof CELL_WALL | typeof CELL_EMPTY;
   shouldRender: boolean;
   bgColor: number;
+
+  food: number;
+  boid?: Boid;
 }>;
 export const hexFactory = Honeycomb.extendHex({
   size: 1,
@@ -20,8 +28,11 @@ export const hexFactory = Honeycomb.extendHex({
   // },
 
   type: CELL_WALL as (typeof CELL_WALL | typeof CELL_EMPTY),
-  shouldRender: false as boolean,
-  bgColor: 0xffffff as number,
+  shouldRender: false,
+  bgColor: 0xffffff,
+
+  food: 0,
+  boid: undefined,
 });
 
 class Grid {
@@ -29,7 +40,7 @@ class Grid {
   public arr: Honeycomb.Grid<Hex>;
 
   constructor(context: Context) {
-    const radius = GRID_RADIUS + GRID_PADDING;
+    const radius = GRID_RADIUS + 1;
     const center = hexFactory({ q: radius, r: radius, s: -2 * radius });
 
     this.size = radius * 2 + 1;
@@ -48,7 +59,7 @@ class Grid {
   }
 
   getAtIndex(index: number) {
-    return this.arr.get(index)!;
+    return this.arr[index]!;
   }
 
   getAtHex(hex: Hex) {
@@ -60,26 +71,28 @@ class Grid {
   }
 
   getTowards(
-    index: number,
+    start: Hex,
     offsetX: number,
     offsetY: number,
     maxDistance: number,
   ) {
-    const start = this.arr[index].nudge();
-    const end = hexFactory(start.x + offsetX, start.y + offsetY).nudge();
+    const end = hexFactory(start.x + offsetX, start.y + offsetY);
 
     const distance = start.distance(end);
     const numSteps = Math.min(distance, maxDistance);
-    console.log(numSteps);
     const step = 1.0 / Math.max(distance, 1);
 
     for (let i = 1; i < numSteps; i++) {
       const res = this.getAtHex(start.lerp(end, step * i).round());
       if (res.type === CELL_WALL) {
-        return res;
+        return { start, hex: res, hit: HIT_WALL };
       }
     }
-    return this.getAtHex(start.lerp(end, step * numSteps).round());
+    return {
+      start,
+      hex: this.getAtHex(start.lerp(end, step * numSteps).round()),
+      hit: distance < maxDistance ? HIT_TARGET : HIT_LIMIT,
+    };
   }
 }
 
