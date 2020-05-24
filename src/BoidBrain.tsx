@@ -170,6 +170,16 @@ class BoidBrain {
     };
 
     this.io = { ...this.io, ...evaluate(this.defn, this.io) };
+
+    Object.keys(this.io).forEach((key) => {
+      if (Array.isArray(this.io[key])) {
+        this.io[key] = this.io[key].map(
+          (v: number) => v * Math.exp(randNormal() * 1e-3),
+        );
+      } else if (typeof this.io[key] === 'number') {
+        this.io[key] = this.io[key] * Math.exp(randNormal() * 1e-3);
+      }
+    });
   }
 }
 

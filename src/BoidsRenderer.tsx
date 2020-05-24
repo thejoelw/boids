@@ -26,27 +26,23 @@ class BoidsRenderer {
     this.show(gridGfx);
 
     let boidsGfx: PIXI.Graphics | undefined;
-    let nextTick = Date.now();
     this.app.ticker.add((delta) => {
-      if (nextTick < Date.now()) {
-        if (boidsGfx) {
-          this.hide(boidsGfx);
-        }
-
-        do {
-          this.context.get(BoidsSimulation).tick();
-          nextTick += TICK_INTERVAL_MS;
-        } while (nextTick < Date.now());
-
-        boidsGfx = this.renderBoids();
-        this.show(boidsGfx);
+      if (boidsGfx) {
+        this.hide(boidsGfx);
       }
+
+      boidsGfx = this.renderBoids();
+      this.show(boidsGfx);
 
       context.get(CameraController).tick();
     });
   }
 
   renderGrid() {
+    // We could definitely render this with a shader instead of geometry
+    // http://glslsandbox.com/e#45065.0
+    // https://www.shadertoy.com/view/XdKyDt
+
     const grid = this.context.get(Grid);
 
     const gfx = new PIXI.Graphics();
@@ -118,6 +114,7 @@ class BoidsRenderer {
   }
 
   setSize(width: number, height: number) {
+    console.log(width, height);
     this.app.renderer.resize(width, height);
   }
 }

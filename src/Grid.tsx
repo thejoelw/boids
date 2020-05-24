@@ -3,7 +3,14 @@ import * as Honeycomb from 'honeycomb-grid';
 import { GRID_RADIUS } from './config';
 
 import Context from './Context';
+import MapGenerator from './MapGenerator';
 import Boid from './Boid';
+
+const assert = (cond: boolean) => {
+  if (!cond) {
+    throw new Error(`Assertion failed!`);
+  }
+};
 
 export const CELL_WALL = 1;
 export const CELL_EMPTY = 2;
@@ -35,6 +42,26 @@ export const hexFactory = Honeycomb.extendHex({
   boid: undefined,
 });
 
+export const swapHexes = (a: Hex, b: Hex) => {
+  assert(a.shouldRender);
+  assert(b.shouldRender);
+
+  [a.type, b.type] = [b.type, a.type];
+  [a.bgColor, b.bgColor] = [b.bgColor, a.bgColor];
+
+  [a.food, b.food] = [b.food, a.food];
+  [a.boid, b.boid] = [b.boid, a.boid];
+
+  if (a.boid) {
+    assert(a.boid.hex === b);
+    a.boid.hex = a;
+  }
+  if (b.boid) {
+    assert(b.boid.hex === a);
+    b.boid.hex = b;
+  }
+};
+
 class Grid {
   public size: number;
   public arr: Honeycomb.Grid<Hex>;
@@ -49,10 +76,15 @@ class Grid {
       height: this.size,
     });
 
+    const mapGenerator = context.get(MapGenerator);
+
     this.arr.forEach((hex) => {
       const dist = center.distance(hex);
 
-      hex.type = dist <= GRID_RADIUS ? CELL_EMPTY : CELL_WALL;
+      hex.type =
+        dist <= GRID_RADIUS && mapGenerator.isWall(hex)
+          ? CELL_EMPTY
+          : CELL_WALL;
       hex.shouldRender = dist <= GRID_RADIUS + 1;
       hex.bgColor = { [CELL_WALL]: 0x888888, [CELL_EMPTY]: 0xeeeeee }[hex.type];
     });

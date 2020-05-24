@@ -78,19 +78,22 @@ class BoidsSimulation {
           ],
           MOVE_TOWARDS: 'LOOK_AT',
         },
-        this.context
-          .get(Grid)
-          .getAtIndex((this.context.get(Grid).arr.length >> 1) + offset),
+        this.context.get(Grid).getAtIndex(offset),
       );
 
-    this.addBoid(createBoid(0));
-    this.addBoid(createBoid(4));
+    for (let i = 0; i < 2; i++) {
+      const index = Math.floor(
+        Math.random() * this.context.get(Grid).arr.length,
+      );
+      this.addBoid(createBoid(index));
+    }
   }
 
   addBoid(b: Boid) {
-    assert(b.hex.boid === undefined);
-    b.hex.boid = b;
-    this.boids.push(b);
+    if (b.hex.boid === undefined && b.hex.type === CELL_EMPTY) {
+      b.hex.boid = b;
+      this.boids.push(b);
+    }
   }
 
   tick() {
@@ -100,10 +103,8 @@ class BoidsSimulation {
     const obstructedHexes: Hex[] = [];
 
     this.boids.forEach((b) => {
-      if (b.hex) {
-        assert(b.hex.boid === b);
-        b.hex.boid = undefined;
-      }
+      assert(b.hex.boid === b);
+      b.hex.boid = undefined;
     });
 
     this.boids.forEach((b) => {
@@ -111,11 +112,14 @@ class BoidsSimulation {
     });
 
     const rollbackBoid = (b: Boid) => {
-      if (b.prevHex.boid) {
-        rollbackBoid(b.prevHex.boid);
+      if (b.hex !== b.prevHex) {
+        if (b.prevHex.boid) {
+          rollbackBoid(b.prevHex.boid);
+        }
+        b.hex = b.prevHex;
       }
+
       b.prevHex.boid = b;
-      b.hex = b.prevHex;
     };
 
     this.boids.forEach((b) => {
@@ -153,6 +157,7 @@ class BoidsSimulation {
 
     this.boids.forEach((b) => b.brain.tick());
 
+    // This could also perhaps be at the beginning
     this.boids.forEach((b) => {
       if (isFinite(b.brain.io.LOOK_AT[0]) && isFinite(b.brain.io.LOOK_AT[1])) {
         const lookRes = grid.getTowards(
