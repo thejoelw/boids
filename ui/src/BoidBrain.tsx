@@ -86,10 +86,7 @@ const funcs = {
       return a * b;
     }
   },
-  random_vec2: (pos: number, scale: number) => [
-    randNormal() * scale + pos,
-    randNormal() * scale + pos,
-  ],
+  random_vec2: (scale: number) => [randNormal() * scale, randNormal() * scale],
 };
 
 const constants = {};
@@ -111,8 +108,7 @@ class BoidBrain {
 
       // Input
       SAW_ITEM: 'ITEM_EMPTY',
-      SAW_LIMITED: false,
-      SAW_OBSCURED: false,
+      SAW_OBJECT: false,
       SAW_OFFSET: [0, 0],
       SAW_MOVEMENT: [0, 0],
       SAW_COLOR: [0, 0, 0],

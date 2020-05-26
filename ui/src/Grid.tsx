@@ -15,10 +15,6 @@ const assert = (cond: boolean) => {
 export const CELL_WALL = 1;
 export const CELL_EMPTY = 2;
 
-export const HIT_TARGET = 0;
-export const HIT_WALL = 1;
-export const HIT_LIMIT = 2;
-
 export type Hex = Honeycomb.Hex<{
   type: typeof CELL_WALL | typeof CELL_EMPTY;
   shouldRender: boolean;
@@ -114,17 +110,16 @@ class Grid {
     const numSteps = Math.min(distance, maxDistance);
     const step = 1.0 / Math.max(distance, 1);
 
-    for (let i = 1; i < numSteps; i++) {
-      const res = this.getAtHex(start.lerp(end, step * i).round());
-      if (res.type === CELL_WALL) {
-        return { start, hex: res, hit: HIT_WALL };
+    let i = 1;
+    while (true) {
+      const hex = this.getAtHex(start.lerp(end, step * i).round());
+      const hitObject = hex.type === CELL_WALL || hex.boid;
+      if (hitObject || i >= numSteps) {
+        return { start, hex, hitObject };
       }
+
+      i++;
     }
-    return {
-      start,
-      hex: this.getAtHex(start.lerp(end, step * numSteps).round()),
-      hit: distance < maxDistance ? HIT_TARGET : HIT_LIMIT,
-    };
   }
 }
 

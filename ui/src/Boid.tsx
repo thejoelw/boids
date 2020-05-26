@@ -2,13 +2,18 @@ import { Hex } from './Grid';
 import BoidBrain, { BoidDefnNode } from './BoidBrain';
 
 class Boid {
+  public name: string;
+
   public brain: BoidBrain;
 
   public prevHex: Hex;
   public hex: Hex;
   public lookedAt: Hex | undefined;
 
-  constructor(defn: BoidDefnNode, hex: Hex) {
+  public restingTicks: number = 0;
+
+  constructor(name: string, defn: BoidDefnNode, hex: Hex) {
+    this.name = name;
     this.brain = new BoidBrain(defn);
     this.prevHex = hex;
     this.hex = hex;

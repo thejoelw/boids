@@ -1,14 +1,7 @@
-import { MAX_LOOK_DISTANCE } from './config';
+import { LOOK_DISTANCE } from './config';
 
 import Context from './Context';
-import Grid, {
-  Hex,
-  CELL_EMPTY,
-  CELL_WALL,
-  HIT_TARGET,
-  HIT_WALL,
-  HIT_LIMIT,
-} from './Grid';
+import Grid, { Hex, CELL_EMPTY, CELL_WALL } from './Grid';
 import Boid from './Boid';
 
 const assert = (cond: boolean) => {
@@ -33,20 +26,44 @@ class BoidsSimulation {
   constructor(context: Context) {
     this.context = context;
 
-    const createBoid = (offset: number) =>
+    const makeRandomIndex = () =>
+      Math.floor(Math.random() * this.context.get(Grid).arr.length);
+
+    for (let i = 0; i < 20; i++) {
+      this.addBoid(
+        new Boid(
+          'plant',
+          {
+            COLOR: ['vec3', 0, 1, 0],
+            LOOK_AT: [
+              'switch',
+              'SAW_ITEM',
+              {
+                ITEM_BOID: [
+                  'if',
+                  ['eq', 'SAW_OFFSET', ['vec2', 0, 0]],
+                  ['random_vec2', 4],
+                  [
+                    'sub',
+                    ['add', 'SAW_OFFSET', 'SAW_MOVEMENT'],
+                    'MOVED_MOVEMENT',
+                  ],
+                ],
+                default: ['random_vec2', 4],
+              },
+            ],
+            MOVE_TOWARDS: ['vec2', 0, 0],
+          },
+          this.context.get(Grid).getAtIndex(makeRandomIndex()),
+        ),
+      );
+    }
+
+    this.addBoid(
       new Boid(
+        'herbivore',
         {
-          COLOR: [
-            'switch',
-            'SAW_ITEM',
-            {
-              ITEM_WALL: ['vec3', 0.5, 0.5, 0.5],
-              ITEM_BOID: ['vec3', 0, 0, 1],
-              ITEM_FOOD: ['vec3', 0, 1, 0],
-              // ITEM_EMPTY: ['vec3', 1, 1, 1],
-              default: 'COLOR',
-            },
-          ],
+          COLOR: ['vec3', 1, 0, 0],
           LOOK_AT: [
             'clamp_to_cell',
             [
@@ -56,7 +73,7 @@ class BoidsSimulation {
                 ITEM_EMPTY: [
                   'add',
                   ['mul', 'LOOK_AT', ['vec2', 0.9, 0.9]],
-                  ['random_vec2', 0, 2],
+                  ['random_vec2', 2],
                 ],
                 ITEM_BOID: [
                   'if',
@@ -64,7 +81,7 @@ class BoidsSimulation {
                   [
                     'add',
                     ['mul', 'LOOK_AT', ['vec2', 0.9, 0.9]],
-                    ['random_vec2', 0, 2],
+                    ['random_vec2', 2],
                   ],
                   [
                     'sub',
@@ -78,15 +95,9 @@ class BoidsSimulation {
           ],
           MOVE_TOWARDS: 'LOOK_AT',
         },
-        this.context.get(Grid).getAtIndex(offset),
-      );
-
-    for (let i = 0; i < 2; i++) {
-      const index = Math.floor(
-        Math.random() * this.context.get(Grid).arr.length,
-      );
-      this.addBoid(createBoid(index));
-    }
+        this.context.get(Grid).getAtIndex(makeRandomIndex()),
+      ),
+    );
   }
 
   addBoid(b: Boid) {
@@ -125,8 +136,7 @@ class BoidsSimulation {
     this.boids.forEach((b) => {
       if (
         isFinite(b.brain.io.MOVE_TOWARDS[0]) &&
-        isFinite(b.brain.io.MOVE_TOWARDS[1]) &&
-        (b.brain.io.MOVE_TOWARDS[0] || b.brain.io.MOVE_TOWARDS[1])
+        isFinite(b.brain.io.MOVE_TOWARDS[1])
       ) {
         const moveTo = grid.getTowards(
           b.hex,
@@ -134,6 +144,12 @@ class BoidsSimulation {
           b.brain.io.MOVE_TOWARDS[1],
           1,
         );
+
+        if (moveTo.hex === b.hex) {
+          b.restingTicks++;
+        } else {
+          b.restingTicks = 0;
+        }
 
         if (moveTo.hex.type === CELL_WALL) {
           rollbackBoid(b);
@@ -160,16 +176,22 @@ class BoidsSimulation {
     // This could also perhaps be at the beginning
     this.boids.forEach((b) => {
       if (isFinite(b.brain.io.LOOK_AT[0]) && isFinite(b.brain.io.LOOK_AT[1])) {
+        const las =
+          LOOK_DISTANCE /
+          Math.sqrt(
+            b.brain.io.LOOK_AT[0] * b.brain.io.LOOK_AT[0] +
+              b.brain.io.LOOK_AT[1] * b.brain.io.LOOK_AT[1],
+          );
+
         const lookRes = grid.getTowards(
           b.hex,
-          b.brain.io.LOOK_AT[0],
-          b.brain.io.LOOK_AT[1],
-          MAX_LOOK_DISTANCE,
+          b.brain.io.LOOK_AT[0] * las,
+          b.brain.io.LOOK_AT[1] * las,
+          Infinity,
         );
         b.lookedAt = lookRes.hex;
 
-        b.brain.io.SAW_LIMITED = lookRes.hit === HIT_LIMIT;
-        b.brain.io.SAW_OBSCURED = lookRes.hit === HIT_WALL;
+        b.brain.io.SAW_OBJECT = lookRes.hitObject;
         b.brain.io.SAW_OFFSET = [
           lookRes.hex.x - lookRes.start.x,
           lookRes.hex.y - lookRes.start.y,

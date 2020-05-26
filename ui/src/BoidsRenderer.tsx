@@ -22,6 +22,8 @@ class BoidsRenderer {
       antialias: true,
     });
 
+    // I think the 16-bit index bug will be fixed in the next PIXI release.
+
     const gridGfx = this.renderGrid();
     this.show(gridGfx);
 
@@ -29,6 +31,7 @@ class BoidsRenderer {
     this.app.ticker.add((delta) => {
       if (boidsGfx) {
         this.hide(boidsGfx);
+        boidsGfx.destroy();
       }
 
       boidsGfx = this.renderBoids();
@@ -46,6 +49,7 @@ class BoidsRenderer {
     const grid = this.context.get(Grid);
 
     const gfx = new PIXI.Graphics();
+    // gfx.cacheAsBitmap = true;
     gfx.lineStyle(0.1, 0x222222, 1);
 
     grid.arr.forEach((hex) => {
